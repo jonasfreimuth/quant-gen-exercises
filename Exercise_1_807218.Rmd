@@ -1,0 +1,160 @@
+---
+title: "Exercise 1"
+author: "Jonas Freimuth, 807218"
+date: "27 10 2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+require("ggplot2",     quietly = TRUE)
+require("dplyr",       quietly = TRUE)
+require("fastDummies", quietly = TRUE)
+```
+
+## Task 1  
+
+Loading the data and checking dimensions:  
+
+```{r task_1}
+exc_dat <- read.csv("data/Ex1.csv")
+str(exc_dat)
+```
+
+* `r nrow(exc_dat)` samples
+* `r ncol(exc_dat)` variables, one discrete, two continuous
+
+## Task 2
+
+Histogram of body weights:
+
+```{r task_2_1}
+hist(exc_dat$Weight, xlab = "Weight", main = "Histogram of Weight",
+     freq = FALSE)
+lines(density(exc_dat$Weight), lwd = 2, col = "red")
+```
+
+The histogram suggests a bimodal distribution *possibly* due to the mixing of 
+two normally distributed samples.
+
+Histogram of body weights by gender:
+
+```{r task_2_2}
+
+plot(1, type = "n", xlab = "Weight", ylab = "Density",
+     xlim = c(min(exc_dat$Weight), max(exc_dat$Weight)),
+     ylim = c(0, 0.06),
+     main = "Histogram of weight by gender",
+     sub  = "Women: red; Men: blue")
+
+hist(exc_dat$Weight[exc_dat$Gender == "Female"], freq = FALSE,
+     col = "red", add = T)
+lines(density(exc_dat$Weight[exc_dat$Gender == "Female"]), lwd = 2, col = "red")
+
+hist(exc_dat$Weight[exc_dat$Gender == "Male"], freq = FALSE,
+     col = "blue", add = T)
+lines(density(exc_dat$Weight[exc_dat$Gender == "Male"]), lwd = 2, col = "blue")
+```
+
+Splitting by gender reveals two normally distributed samples.
+
+## Task 3
+
+```{r task_3_1}
+plot(exc_dat$Height, exc_dat$Weight, 
+     main = "Weight by height",
+     xlab = "Height",
+     ylab = "Weight")
+text(x = mean(exc_dat$Height), y = max(exc_dat$Weight),
+     labels = paste("r =",
+                    round(cor(exc_dat$Weight, exc_dat$Height), 2)))
+
+plot(exc_dat$Height, exc_dat$Weight,
+     main = "Weight by height split by gender",
+     sub  = "Women: black; Men: magenta",
+     col  = as.factor(exc_dat$Gender),
+     xlab = "Height",
+     ylab = "Weight")
+text(x = c(mean(exc_dat$Height[exc_dat$Gender == "Female"]),
+           mean(exc_dat$Height[exc_dat$Gender == "Male"  ])),
+     
+     # set the women's r slightly lower to avoid overlap
+     y = c(max(exc_dat$Weight) - 0.1 * max(exc_dat$Weight),
+           max(exc_dat$Weight)),
+     
+     labels = c(paste("Women's r =",
+                      round(cor(exc_dat$Weight[exc_dat$Gender == "Female"],
+                                exc_dat$Height[exc_dat$Gender == "Female"]),
+                            2)),
+                paste("Men's r =",
+                      round(cor(exc_dat$Weight[exc_dat$Gender == "Male"  ],
+                                exc_dat$Height[exc_dat$Gender == "Male"  ]),
+                            2))))
+```
+
+Correlations of weight with height become smaller when computing them for each 
+gender alone as compared to computing them for the overall sample.
+
+# Task 4
+
+```{r task_4_1}
+mod_1 <- lm(Weight ~ Height,          data = exc_dat)
+mod_2 <- lm(Weight ~ Height + Gender, data = exc_dat)
+mod_3 <- lm(Weight ~ Height * Gender, data = exc_dat)
+
+summary(mod_1)
+summary(mod_2)
+summary(mod_3)
+```
+### Simple model:  
+
+Coefficients: 
+$\beta_0 = `r round(coef(mod_1)[1], 2)`$, 
+$\beta_{Height} = `r round(coef(mod_1)[2], 2)`$.  
+
+All parameters highly significant.
+
+### Model with Gender: 
+
+Coefficients: 
+$\beta_0 = `r round(coef(mod_2)[1], 2)`$, 
+$\beta_{Height} = `r round(coef(mod_2)[2], 2)`$,
+$\beta_{Gender} = `r round(coef(mod_2)[3], 2)`$.
+
+All parameters highly significant.
+
+### Interaction Model: 
+
+Coefficients: 
+$\beta_0 = `r round(coef(mod_3)[1], 2)`$, 
+$\beta_{Height} = `r round(coef(mod_3)[2], 2)`$,
+$\beta_{Gender} = `r round(coef(mod_3)[3], 2)`$,
+$\beta_{Height * Gender} = `r round(coef(mod_3)[3], 2)`$.
+
+All parameters except the interaction term highly significant.
+
+## Task 5
+
+```{r task_5_1}
+exc_dat_dummy <- dummy_cols(exc_dat, "Gender")
+
+mod_dummy <- lm(Weight ~ Height + Gender_Male,
+                data = exc_dat_dummy)
+
+summary(mod_dummy)
+```
+
+When manually creating a dummy variable and fitting a model, the results are 
+the same as when leaving the discrete variable.
+
+```{r task_5_2}
+exc_dat_recode <- exc_dat %>% 
+  mutate(Gender = as.numeric(recode(Gender,
+                                    !!! c("Male" = "5", "Female" = "1"))))
+
+mod_recode <- lm(Weight ~ Height + Gender, data = exc_dat_recode)
+summary(mod_recode)
+```
+
+However, when using arbitrary numeric values to represent discrete variable 
+values, the differences between the numeric values have an effect. Here the 
+parameter for gender becomes smaller.
