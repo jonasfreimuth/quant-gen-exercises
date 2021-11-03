@@ -3,10 +3,11 @@
 .Rhistory
 .RData
 .Ruserdata
+.Rprofile
 
 # data
 data
 
 # Rmarkdown stuff
-*/*.pdf
-*/*.html
+**/*.pdf
+**/*.html
