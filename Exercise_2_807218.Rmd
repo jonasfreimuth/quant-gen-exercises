@@ -1,0 +1,62 @@
+---
+title: "Exercise 2"
+author: "Jonas Freimuth, 807218"
+date: "3 11 2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+require("dplyr",      quietly = TRUE)
+require("tidyr",      quietly = TRUE)
+require("tidyselect", quietly = TRUE)
+```
+
+## Task 1
+
+```{r task_1_1}
+
+```
+
+## Task 2
+
+```{r task_2_1}
+mz_yld_raw <- read.csv("data/Ex2.csv")
+
+str(mz_yld_raw)
+
+mz_yld <- mz_yld_raw %>% 
+  select(matches("E\\d_F\\d")) %>% 
+  pivot_longer(cols      = everything(),
+               names_to  = c("environment", "family"),
+               names_sep = "_",
+               values_to = "yield") %>% 
+  
+
+head(mz_yld)
+```
+
+```{r task_2_2}
+
+mod_yld_f1 <- aov(yield ~ environment, data = mz_yld %>% filter(family == "F1"))
+
+summary(mod_yld_f1)
+
+```
+
+$\Rightarrow$ Environment is a factor affecting the yield of maize plants of 
+family 1.
+
+## Task 3
+
+```{r task_3_1}
+
+exc_dat <- read.csv("data/Ex1.csv")
+
+wh_mod <- lm(Weight ~ Height, data = exc_dat)
+
+summary(wh_mod)
+
+```
+
