@@ -16,8 +16,22 @@ require("tidyselect", quietly = TRUE)
 ## Task 1
 
 ```{r task_1_1}
+aov_tab <- data.frame("Sum Sq"  = c(720, 480, 1200),
+                      "df"      = c(3, 16, 19),
+                      "Mean Sq" = c(240, 30, NA),
+                      "F val"   = c(8, NA, NA),
+                      row.names = c("Treatment", "Error", "Total"))
 
+aov_tab
 ```
+
+Total degrees of freedom: $N - 1 = 19 \Rightarrow N = 20 \Rightarrow$ $20$ 
+samples overall. Treatment degrees of freedom: $m - 1 = 3 \Rightarrow m = 4$ 
+$\Rightarrow$ four treatment groups. Samples per group assuming perfect balance
+of groups: $n = N / m = 20 / 4 = 5 \Rightarrow$ five samples per group.
+
+There is a significant difference between the means of different treatments 
+(ANOVA, $F_{3, 16} = 8, p = `r round(pf(8, 3, 16, lower.tail = FALSE), 3)`$).
 
 ## Task 2
 
@@ -29,24 +43,81 @@ str(mz_yld_raw)
 mz_yld <- mz_yld_raw %>% 
   select(matches("E\\d_F\\d")) %>% 
   pivot_longer(cols      = everything(),
-               names_to  = c("environment", "family"),
+               names_to  = c("env", "fam"),
                names_sep = "_",
-               values_to = "yield") %>% 
+               values_to = "yield")
   
 
 head(mz_yld)
 ```
 
-```{r task_2_2}
-
-mod_yld_f1 <- aov(yield ~ environment, data = mz_yld %>% filter(family == "F1"))
+```{r task_2_test}
+mod_yld_f1 <- aov(yield ~ env, data = mz_yld %>% filter(fam == "F1"))
 
 summary(mod_yld_f1)
+```
+
+
+```{r task_2_2}
+mz_yld_f1 <- mz_yld %>% 
+  filter(fam == "F1")
+
+m <- length(unique(mz_yld_f1$env))
+n <- length(mz_yld_f1$env[mz_yld_f1$env == unique(mz_yld_f1$env[1])])
+N <- nrow(mz_yld_f1)
+
+# calculate degrees of freedom
+dfs <- c("betw" = m - 1,
+         "ins"  = N - m,
+         "tot"  = N - 1)
+
+# calculate means
+grp_means <- mz_yld_f1 %>% 
+  group_by(env) %>% 
+  summarise(mean = mean(yield))
+
+gm <- mean(mz_yld_f1$yield)
+
+# calculate sums of squares
+ins_sum_sq_vec <- rep(NA, length(mz_yld_f1$yield))
+
+for (i in 1:m) {
+  
+  ins_sum_sq <- mz_yld_f1$yield[mz_yld_f1$env == unique(mz_yld_f1$env)[i]]
+  ins_sum_sq <- (ins_sum_sq - grp_means$mean[i]) ^ 2
+  ins_sum_sq_vec[(((i - 1) * n) + 1):((i * n))] <- ins_sum_sq
+  
+}
+
+sum_sq <- c("betw" = sum((grp_means$mean  - gm) ^ 2 * n),
+            "ins"  = sum(ins_sum_sq_vec),
+            "tot"  = sum((mz_yld_f1$yield - gm) ^ 2))
+
+# calculate mean squares
+mean_sq <- c("betw" = sum_sq[["betw"]] / dfs[["betw"]],
+             "ins"  = sum_sq[["ins" ]] / dfs[["ins" ]],
+             "tot"  = NA)
+
+# calculate F value
+f_val <- c("betw" = mean_sq[["betw"]] / mean_sq[["ins"]],
+           "ins"  = NA,
+           "tot"  = NA)
+
+# assemble table
+aov_tab <- data.frame("Sum Sq"  = sum_sq,
+                      "df"      = dfs,
+                      "Mean Sq" = mean_sq,
+                      "F val"   = f_val,
+                      row.names = c("Treatment", "Error", "Total"))
+
+# display table
+aov_tab
 
 ```
 
 $\Rightarrow$ Environment is a factor affecting the yield of maize plants of 
-family 1.
+family 1 (ANOVA, $F_{2, 147} = 205.7,$ 
+$p = `r round(pf(205.7, 2, 147, lower.tail = FALSE), 3)`$).
 
 ## Task 3
 
@@ -56,7 +127,24 @@ exc_dat <- read.csv("data/Ex1.csv")
 
 wh_mod <- lm(Weight ~ Height, data = exc_dat)
 
-summary(wh_mod)
+wh_mod_sum <- summary(wh_mod)
+wh_mod_sum
+
+coefs <- wh_mod_sum[["coefficients"]]
 
 ```
 
+$\Rightarrow$ the value of the $t$-statistic for the `Intercept` is $-166$, the 
+one of the regression coefficient for `Height` is $242.8$:
+
+#### Intercept  
+  
+$T = \beta_{Intcp} / SE_{Intcp} =$
+$`r round(coefs[1, 1], 2)` / `r round(coefs[1, 2], 2)` =$
+$`r round(coefs[1, 1] / coefs[1, 2], 2)`$
+
+#### Height  
+  
+$T = \beta_{Height} / SE_{Heigt} =$
+$`r round(coefs[2, 1], 2)` / `r round(coefs[2, 2], 2)` =$
+$`r round(coefs[2, 1] / coefs[2, 2], 2)`$
