@@ -59,56 +59,79 @@ summary(mod_yld_f1)
 
 
 ```{r task_2_2}
-mz_yld_f1 <- mz_yld %>% 
-  filter(fam == "F1")
 
-m <- length(unique(mz_yld_f1$env))
-n <- length(mz_yld_f1$env[mz_yld_f1$env == unique(mz_yld_f1$env[1])])
-N <- nrow(mz_yld_f1)
-
-# calculate degrees of freedom
-dfs <- c("betw" = m - 1,
-         "ins"  = N - m,
-         "tot"  = N - 1)
-
-# calculate means
-grp_means <- mz_yld_f1 %>% 
-  group_by(env) %>% 
-  summarise(mean = mean(yield))
-
-gm <- mean(mz_yld_f1$yield)
-
-# calculate sums of squares
-ins_sum_sq_vec <- rep(NA, length(mz_yld_f1$yield))
-
-for (i in 1:m) {
+aov_table <- function(y, x) {
   
-  ins_sum_sq <- mz_yld_f1$yield[mz_yld_f1$env == unique(mz_yld_f1$env)[i]]
-  ins_sum_sq <- (ins_sum_sq - grp_means$mean[i]) ^ 2
-  ins_sum_sq_vec[(((i - 1) * n) + 1):((i * n))] <- ins_sum_sq
+  # ensure x and y have same length
+  if (length(x) != length(y)) {
+    stop("x and y must have the same lenth!")
+  }
+  
+  # ensure x is a factor or character and y is numeric
+  if (!(is.numeric(y))) {
+    stop("y must be numeric!")
+  }
+  if (!(is.character(x) | is.factor(x))) {
+    stop("x must be either a factor or a character vector!")
+  }
+  
+  m <- length(unique(x))
+  n <- length(x[x == unique(x[1])])
+  N <- length(y)
+  
+  # calculate degrees of freedom
+  dfs <- c("betw" = m - 1,
+           "ins"  = N - m,
+           "tot"  = N - 1)
+  
+  # calculate means
+  grp_means <- data.frame(x = x,
+                          y = y) %>% 
+    group_by(x) %>% 
+    summarise(mean = mean(y))
+  
+  gm <- mean(y)
+  
+  # calculate sums of squares
+  ins_sum_sq_vec <- rep(NA, length(y))
+  
+  for (i in 1:m) {
+    
+    ins_sum_sq <- y[x == unique(x)[i]]
+    ins_sum_sq <- (ins_sum_sq - grp_means$mean[i]) ^ 2
+    ins_sum_sq_vec[(((i - 1) * n) + 1):((i * n))] <- ins_sum_sq
+    
+  }
+  
+  sum_sq <- c("betw" = sum((grp_means$mean  - gm) ^ 2 * n),
+              "ins"  = sum(ins_sum_sq_vec),
+              "tot"  = sum((y - gm) ^ 2))
+  
+  # calculate mean squares
+  mean_sq <- c("betw" = sum_sq[["betw"]] / dfs[["betw"]],
+               "ins"  = sum_sq[["ins" ]] / dfs[["ins" ]],
+               "tot"  = NA)
+  
+  # calculate F value
+  f_val <- c("betw" = mean_sq[["betw"]] / mean_sq[["ins"]],
+             "ins"  = NA,
+             "tot"  = NA)
+  
+  # assemble table
+  aov_tab <- data.frame("Sum Sq"  = sum_sq,
+                        "df"      = dfs,
+                        "Mean Sq" = mean_sq,
+                        "F val"   = f_val,
+                        row.names = c("Treatment", "Error", "Total"))
+  
+  return(aov_tab)
   
 }
 
-sum_sq <- c("betw" = sum((grp_means$mean  - gm) ^ 2 * n),
-            "ins"  = sum(ins_sum_sq_vec),
-            "tot"  = sum((mz_yld_f1$yield - gm) ^ 2))
+mz_yld_f1 <- mz_yld %>% 
+  filter(fam == "F1")
 
-# calculate mean squares
-mean_sq <- c("betw" = sum_sq[["betw"]] / dfs[["betw"]],
-             "ins"  = sum_sq[["ins" ]] / dfs[["ins" ]],
-             "tot"  = NA)
-
-# calculate F value
-f_val <- c("betw" = mean_sq[["betw"]] / mean_sq[["ins"]],
-           "ins"  = NA,
-           "tot"  = NA)
-
-# assemble table
-aov_tab <- data.frame("Sum Sq"  = sum_sq,
-                      "df"      = dfs,
-                      "Mean Sq" = mean_sq,
-                      "F val"   = f_val,
-                      row.names = c("Treatment", "Error", "Total"))
+aov_tab <- aov_table(y = mz_yld_f1$yield, x = mz_yld_f1$env)
 
 # display table
 aov_tab
