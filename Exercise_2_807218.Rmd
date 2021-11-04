@@ -171,3 +171,182 @@ $`r round(coefs[1, 1] / coefs[1, 2], 2)`$
 $T = \beta_{Height} / SE_{Heigt} =$
 $`r round(coefs[2, 1], 2)` / `r round(coefs[2, 2], 2)` =$
 $`r round(coefs[2, 1] / coefs[2, 2], 2)`$
+
+```{r task 3_2}
+
+# define and calculate givens
+pred     <- predict(wh_mod)
+obs      <- exc_dat$Weight
+mean_obs <- mean(obs)
+
+n <- length(obs)
+p <- 1
+
+# calculate degrees of freedom
+dfs <- c("reg" = p,
+         "res" = n - p - 1,
+         "tot" = n - 1)
+
+# calculate sums of squares
+sum_sq <- c("reg" = sum((pred - mean_obs) ^ 2),
+            "res" = sum((obs  - pred    ) ^ 2),
+            "tot" = sum((obs  - mean_obs) ^ 2))
+
+# calculate mean squares
+mean_sq <- c("reg" = sum_sq[["reg"]] / dfs[["reg"]],
+             "res" = sum_sq[["res"]] / dfs[["res"]],
+             "tot" = NA)
+
+# calculate F value
+f_val <- c("reg" = mean_sq[["reg"]] / mean_sq[["res"]],
+           "res" = NA,
+           "tot" = NA)
+
+# assemble table
+aov_tab <- data.frame("Sum Sq"  = sum_sq,
+                      "df"      = dfs,
+                      "Mean Sq" = mean_sq,
+                      "F val"   = f_val,
+                      row.names = c("Treatment", "Error", "Total"))
+
+# display aov table
+aov_tab
+
+# calculate p value
+pval <- pf(f_val[["reg"]], dfs[["reg"]], dfs[["res"]], lower.tail = FALSE)
+```
+*TODO: Explanation for DFs*
+The degrees of freedom 
+
+There is a significant influence of Height on Weight (ANOVA, 
+$F_{1, 9998} = 58955.92, p = `r round(pval, 3)`$).
+
+The coefficient of determination is: $R^2 = 1 - \frac{SS_{res}}{SS_{tot}}$
+$= 1 - \frac{`r round(sum_sq[["res"]], 2)`}{`r round(sum_sq[["tot"]], 2)`}$
+$= `r round(1 - sum_sq[["res"]] / sum_sq[["tot"]], 2)`$
+
+
+## Task 4  
+
+```{r task_4_1}
+# Tukey HSD pos-hoc
+mod_yld_f1_tukey <- TukeyHSD(mod_yld_f1)
+mod_yld_f1_tukey
+
+# pairwise t-tests for bonferroni and holm
+pairs <- combn(unique(mz_yld_f1$env), 2)
+
+pvals <- list()
+
+for (i in 1:ncol(pairs)) {
+  env_a <- mz_yld_f1$yield[mz_yld_f1$env == pairs[1, i]]
+  env_b <- mz_yld_f1$yield[mz_yld_f1$env == pairs[2, i]]
+  
+  env_test <- t.test(env_a, env_b)
+  
+  pvals[[paste(pairs[1, i], pairs[2, i], sep = ", ")]] <- env_test$p.value
+}
+
+pvals <- unlist(pvals)
+
+# correct pvals with bonferroni and holm method
+pvals_bonf <- p.adjust(pvals, method = "bonferroni")
+cat("\n\nBonferroni:\n"); pvals_bonf
+
+pvals_holm <- p.adjust(pvals, method = "holm")
+cat("\n\nHolm:\n"); pvals_holm
+
+
+```
+
+*TODO: Explanation of HSD*
+
+## Task 5
+
+```{r task_5_1}
+# calculate and extract givens
+a <- length(unique(mz_yld$env))
+b <- length(unique(mz_yld$fam))
+n <- nrow(mz_yld)
+
+y   <- mz_yld$yield
+x_a <- mz_yld$env
+x_b <- mz_yld$fam
+
+# calculate means
+grp_means_a <- mz_yld %>% 
+  group_by(env) %>% 
+  summarise(mean = mean(yield))
+
+grp_means_b <-  mz_yld %>% 
+  group_by(fam) %>% 
+  summarise(mean = mean(yield))
+
+gm <- mean(y)
+
+# calculate degrees of freedom
+dfs <- c("A"  = a - 1,
+         "B"  = b - 1,
+         "AB" = (a - 1) * (b - 1),
+         "E"  = (a * b) * (n - 1),
+         "T"  = (a * b  * n) - 1)
+
+# calculate sums of squares within a
+ins_a_sum_sq_vec <- rep(NA, n)
+
+for (i in 1:a) {
+  
+  ins_a_sum_sq <- y[x_a == unique(x_a)[i]]
+  ins_a_sum_sq <- (ins_a_sum_sq - grp_means_a$mean[i]) ^ 2
+  ins_a_sum_sq_vec[(((i - 1) * n) + 1):((i * n))] <- ins_a_sum_sq
+  
+}
+
+# calculate sums of squares within b
+ins_b_sum_sq_vec <- rep(NA, n)
+
+for (i in 1:a) {
+  
+  ins_b_sum_sq <- y[x_b == unique(x_b)[i]]
+  ins_b_sum_sq <- (ins_b_sum_sq - grp_means_b$mean[i]) ^ 2
+  ins_b_sum_sq_vec[(((i - 1) * n) + 1):((i * n))] <- ins_b_sum_sq
+  
+}
+
+# compile sum of squares vector overall
+# TODO: Do this properly
+sum_sq <- c("A"  = sum((grp_means_a$mean  - gm) ^ 2 * n), # should this be time n or a?
+            "B"  = sum((grp_means_b$mean  - gm) ^ 2 * n),
+            "AB" = NA,
+            "E"  = NA, # something with the 2 ind_x_sum_sq_vecs
+            "T"  = sum((y - gm) ^ 2))
+
+# calculate mean squares
+mean_sq <- c("A"  = sum_sq[["A" ]] / dfs[["A" ]],
+             "B"  = sum_sq[["B" ]] / dfs[["B" ]],
+             "AB" = sum_sq[["AB"]] / dfs[["AB"]],
+             "E"  = sum_sq[["E" ]] / dfs[["E" ]],
+             "T"  = NA)
+
+# calculate F value
+f_val <- c("A"  = mean_sq[["A" ]] / mean_sq[["E"]],
+           "B"  = mean_sq[["B" ]] / mean_sq[["E"]],
+           "AB" = mean_sq[["AB"]] / mean_sq[["E"]],
+           "E"  = NA,
+           "T"  = NA)
+
+non_int_vec <- c(1, 2, 4, 5)
+
+# assemble table
+aov_tab <- data.frame("Sum Sq"  = sum_sq[non_int_vec],
+                      "df"      = dfs[non_int_vec],
+                      "Mean Sq" = mean_sq[non_int_vec],
+                      "F val"   = f_val[non_int_vec],
+                      row.names = c("Environment", "Family", "Error", "Total"))
+
+
+```
+
+
+$\Rightarrow$ While the exact $p$-values returned by the different methods 
+differ slightly, here the conclusions they suggest are equal.
