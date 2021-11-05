@@ -11,6 +11,10 @@ knitr::opts_chunk$set(echo = TRUE)
 require("dplyr",      quietly = TRUE)
 require("tidyr",      quietly = TRUE)
 require("tidyselect", quietly = TRUE)
+
+# disable grouping output message
+options(dplyr.summarise.inform = FALSE)
+
 ```
 
 ## Task 1
@@ -215,8 +219,6 @@ aov_tab
 # calculate p value
 pval <- pf(f_val[["reg"]], dfs[["reg"]], dfs[["res"]], lower.tail = FALSE)
 ```
-*TODO: Explanation for DFs*
-The degrees of freedom 
 
 There is a significant influence of Height on Weight (ANOVA, 
 $F_{1, 9998} = 58955.92, p = `r round(pval, 3)`$).
