@@ -259,7 +259,10 @@ cat("\n\nHolm:\n"); pvals_holm
 
 ```
 
-*TODO: Explanation of HSD*
+In contrast to the two methods based on simple t-tests with multiple testing
+correction, Tukey's HSD method estimates the confidence intervals of the 
+differences in a more appropriate way, and can therefore use the resulting 
+p-values without multiple testing correction.
 
 $\Rightarrow$ While the exact $p$-values returned by the different methods 
 differ slightly, here the conclusions they suggest are equal.
@@ -319,7 +322,7 @@ dfs <- c("A"  =  a - 1,
          "B"  =  b - 1,
          "AB" = (a - 1) * (b  - 1),
          "E"  =  a * b  * (k  - 1),
-         "T"  = (a * b  *  k) - 1)
+         "T"  =  n - 1)
 
 # calculate sums of squares within crossings of a and b
 ins_ab_resid <- mz_yld %>% 
@@ -366,6 +369,12 @@ aov_tab_int
 
 ```
 
+$\Rightarrow$ This ANOVA-table shows a strongly significant effect of the 
+interaction of Family with the environment, meaning some families produce larger
+or smaller yield in certain environments than others. It also shows a strongly 
+significant effect of both environment and family, which strongly suggests that 
+both have an effect on the yield.
+
 ```{r task_5_2}
 
 # calculate sums of squares within a
@@ -377,8 +386,8 @@ ins_ab_resid <- mz_yld %>%
 # calculate degrees of freedom
 dfs <- c("A"  =  a - 1,
          "B"  =  b - 1,
-         "E"  =  a * b  * (k  - 1),
-         "T"  = (a * b  *  k) - 1)
+         "E"  =  n - a - b + 1,
+         "T"  =  n - 1)
 
 # compile sum of squares vector overall
 sum_sq <- c("A"  = sum((grp_means_a $mean - gm)                 ^ 2) * b * k, 
@@ -416,4 +425,9 @@ aov_tab_smp <- data.frame("Sum Sq"  = sum_sq,
 aov_tab_smp
 
 ```
-# TODO: Explain meaning of ANOVA
+$\Rightarrow$ This ANOVA-table shows shows a strongly significant effect of both
+environment and family, strongly suggesting an effect of both on the yield, 
+though the pvalues are not quite as strong as seen in the interaction table, and
+no statement about whether some families produce greater or smaller yield in 
+certain environments can be made.
+
