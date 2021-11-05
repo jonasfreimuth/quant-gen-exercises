@@ -261,13 +261,18 @@ cat("\n\nHolm:\n"); pvals_holm
 
 *TODO: Explanation of HSD*
 
+$\Rightarrow$ While the exact $p$-values returned by the different methods 
+differ slightly, here the conclusions they suggest are equal.
+
 ## Task 5
 
 ```{r task_5_1}
 # calculate and extract givens
 a <- length(unique(mz_yld$env))
 b <- length(unique(mz_yld$fam))
+
 n <- nrow(mz_yld)
+k <- n / (a * b)
 
 y   <- mz_yld$yield
 x_a <- mz_yld$env
@@ -278,48 +283,55 @@ grp_means_a <- mz_yld %>%
   group_by(env) %>% 
   summarise(mean = mean(yield))
 
+
 grp_means_b <-  mz_yld %>% 
   group_by(fam) %>% 
   summarise(mean = mean(yield))
 
+
+grp_means_ab <- mz_yld %>% 
+  group_by(env, fam) %>% 
+  summarise(mean = mean(yield))
+  
+
 gm <- mean(y)
 
+# calculate expected values for factor crossings
+grp_expct_ab <- grp_means_ab %>% 
+  select(env, fam) %>% 
+  mutate(expct = NA)
+
+grp_expct_ab <- apply(grp_expct_ab, 1, function(row) {
+  mean_a <- grp_means_a$mean[grp_means_a$env == row[1]]
+  mean_b <- grp_means_b$mean[grp_means_b$fam == row[2]]
+  
+  row[3] <- mean_a + mean_b - gm
+  
+  return(row)
+}) %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  mutate(expct = as.numeric(expct))
+  
+
 # calculate degrees of freedom
-dfs <- c("A"  = a - 1,
-         "B"  = b - 1,
-         "AB" = (a - 1) * (b - 1),
-         "E"  = (a * b) * (n - 1),
-         "T"  = (a * b  * n) - 1)
+dfs <- c("A"  =  a - 1,
+         "B"  =  b - 1,
+         "AB" = (a - 1) * (b  - 1),
+         "E"  =  a * b  * (k  - 1),
+         "T"  = (a * b  *  k) - 1)
 
-# calculate sums of squares within a
-ins_a_sum_sq_vec <- rep(NA, n)
-
-for (i in 1:a) {
-  
-  ins_a_sum_sq <- y[x_a == unique(x_a)[i]]
-  ins_a_sum_sq <- (ins_a_sum_sq - grp_means_a$mean[i]) ^ 2
-  ins_a_sum_sq_vec[(((i - 1) * n) + 1):((i * n))] <- ins_a_sum_sq
-  
-}
-
-# calculate sums of squares within b
-ins_b_sum_sq_vec <- rep(NA, n)
-
-for (i in 1:a) {
-  
-  ins_b_sum_sq <- y[x_b == unique(x_b)[i]]
-  ins_b_sum_sq <- (ins_b_sum_sq - grp_means_b$mean[i]) ^ 2
-  ins_b_sum_sq_vec[(((i - 1) * n) + 1):((i * n))] <- ins_b_sum_sq
-  
-}
+# calculate sums of squares within crossings of a and b
+ins_ab_resid <- mz_yld %>% 
+  group_by(env, fam) %>% 
+  mutate(grp_resid = yield - mean(yield))
 
 # compile sum of squares vector overall
-# TODO: Do this properly
-sum_sq <- c("A"  = sum((grp_means_a$mean  - gm) ^ 2 * n), # should this be time n or a?
-            "B"  = sum((grp_means_b$mean  - gm) ^ 2 * n),
-            "AB" = NA,
-            "E"  = NA, # something with the 2 ind_x_sum_sq_vecs
-            "T"  = sum((y - gm) ^ 2))
+sum_sq <- c("A"  = sum((grp_means_a $mean - gm)                 ^ 2) * b * k, 
+            "B"  = sum((grp_means_b $mean - gm)                 ^ 2) * a * k,
+            "AB" = sum((grp_means_ab$mean - grp_expct_ab$expct) ^ 2)     * k,
+            "E"  = sum((ins_ab_resid$grp_resid)                 ^ 2), 
+            "T"  = sum((y - gm)                                 ^ 2))
 
 # calculate mean squares
 mean_sq <- c("A"  = sum_sq[["A" ]] / dfs[["A" ]],
@@ -335,18 +347,73 @@ f_val <- c("A"  = mean_sq[["A" ]] / mean_sq[["E"]],
            "E"  = NA,
            "T"  = NA)
 
-non_int_vec <- c(1, 2, 4, 5)
+# calcluate P vals
+p_val <- c("A"  = pf(f_val[["A" ]], dfs[["A" ]], dfs[["E"]], lower.tail = FALSE),
+           "B"  = pf(f_val[["B" ]], dfs[["B" ]], dfs[["E"]], lower.tail = FALSE),
+           "AB" = pf(f_val[["AB"]], dfs[["AB"]], dfs[["E"]], lower.tail = FALSE),
+           "E"  = NA,
+           "T"  = NA)
 
 # assemble table
-aov_tab <- data.frame("Sum Sq"  = sum_sq[non_int_vec],
-                      "df"      = dfs[non_int_vec],
-                      "Mean Sq" = mean_sq[non_int_vec],
-                      "F val"   = f_val[non_int_vec],
-                      row.names = c("Environment", "Family", "Error", "Total"))
-
+aov_tab_int <- data.frame("Sum Sq"  = sum_sq,
+                          "df"      = dfs,
+                          "Mean Sq" = mean_sq,
+                          "F val"   = f_val,
+                          "P val"   = p_val,
+                          row.names = c("Environment", "Family", "Interaction",
+                                        "Error", "Total"))
+aov_tab_int
 
 ```
 
+```{r task_5_2}
 
-$\Rightarrow$ While the exact $p$-values returned by the different methods 
-differ slightly, here the conclusions they suggest are equal.
+# calculate sums of squares within a
+ins_ab_resid <- mz_yld %>% 
+  group_by(env, fam) %>% 
+  mutate(grp_resid = yield - mean(yield))
+  
+
+# calculate degrees of freedom
+dfs <- c("A"  =  a - 1,
+         "B"  =  b - 1,
+         "E"  =  a * b  * (k  - 1),
+         "T"  = (a * b  *  k) - 1)
+
+# compile sum of squares vector overall
+sum_sq <- c("A"  = sum((grp_means_a $mean - gm)                 ^ 2) * b * k, 
+            "B"  = sum((grp_means_b $mean - gm)                 ^ 2) * a * k,
+            "E"  = sum((ins_ab_resid$grp_resid)                 ^ 2) +
+                   sum((grp_means_ab$mean - grp_expct_ab$expct) ^ 2)     * k,
+            "T"  = sum((y - gm)                                 ^ 2))
+
+# calculate mean squares
+mean_sq <- c("A"  = sum_sq[["A" ]] / dfs[["A" ]],
+             "B"  = sum_sq[["B" ]] / dfs[["B" ]],
+             "E"  = sum_sq[["E" ]] / dfs[["E" ]],
+             "T"  = NA)
+
+# calculate F value
+f_val <- c("A"  = mean_sq[["A" ]] / mean_sq[["E"]],
+           "B"  = mean_sq[["B" ]] / mean_sq[["E"]],
+           "E"  = NA,
+           "T"  = NA)
+
+# calcluate P vals
+p_val <- c("A"  = pf(f_val[["A" ]], dfs[["A" ]], dfs[["E"]], lower.tail = FALSE),
+           "B"  = pf(f_val[["B" ]], dfs[["B" ]], dfs[["E"]], lower.tail = FALSE),
+           "E"  = NA,
+           "T"  = NA)
+
+# assemble table
+aov_tab_smp <- data.frame("Sum Sq"  = sum_sq,
+                          "df"      = dfs,
+                          "Mean Sq" = mean_sq,
+                          "F val"   = f_val,
+                          "P val"   = p_val,
+                          row.names = c("Environment", "Family",
+                                        "Error", "Total"))
+aov_tab_smp
+
+```
+# TODO: Explain meaning of ANOVA
