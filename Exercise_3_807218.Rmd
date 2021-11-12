@@ -1,0 +1,117 @@
+---
+title: "Exercise 3"
+author: "Jonas Freimuth, 807218"
+date: "12 11 2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+require("lme4",       quietly = TRUE)
+require("lmerTest",   quietly = TRUE)
+require("dplyr",      quietly = TRUE)
+require("tidyr",      quietly = TRUE)
+require("tidyselect", quietly = TRUE)
+require("ggplot2",    quietly = TRUE)
+
+# disable grouping output message
+options(dplyr.summarise.inform = FALSE)
+
+```
+
+## Task 1
+
+```{r task_1_1}
+wh_df <- read.csv("data/Ex3.csv") %>% 
+  mutate(sire = as.factor(sire),
+         dame = as.factor(dame))
+
+str(wh_df)
+```
+
+```{r task_1_2}
+ggplot(wh_df, aes(soil, yield, col = sire, group = sire)) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) + 
+  theme_minimal()
+```
+
+$\Rightarrow$ As the regression lines are (almost) parallel, different sires 
+lead to the same slope but different intercepts.
+
+```{r task_1_3}
+ggplot(wh_df, aes(soil, yield, col = dame, group = dame)) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) + 
+  theme_minimal() + 
+  theme(legend.position = "none")
+```
+
+$\Rightarrow$ Both intercepts and slopes vary between dame groups.
+
+## Task 2
+
+```{r task_2_1}
+mod_ranint_sum <- summary(lmer(yield ~ soil + (1 | sire), wh_df))
+mod_ranint_sum
+
+ranint_coef <- round(coef(mod_ranint_sum), 3)
+```
+
+### Fixed Effects
+
+Intercept: $\beta_{Incp} = `r ranint_coef[1, 1]`, p = `r ranint_coef[1, 5]`$  
+Eff. of Soil: $\beta_{soil} = `r ranint_coef[2, 1]`,$
+$p = `r ranint_coef[2, 5]`$  
+
+### Random Effects
+
+Variance of Sire Intercept: $Var_{Incp, sire} = 0.885$  
+Residual variance: $Var_{Resid} = 1.421$
+
+## Task 3
+
+```{r task_3_1}
+mod_ranslp_sum <- summary(lmer(yield ~ soil + (0 + soil | dame), wh_df))
+mod_ranslp_sum
+
+ranslp_coef <- round(coef(mod_ranslp_sum), 3)
+```
+
+### Fixed Effects
+
+Intercept: $\beta_{Incp} = `r ranslp_coef[1, 1]`, p = `r ranslp_coef[1, 5]`$  
+Eff. of Soil: $\beta_{soil} = `r ranslp_coef[2, 1]`,$
+$p = `r ranslp_coef[2, 5]`$  
+
+### Random Effects
+
+Variance of dame effect on yield: $Var_{slope, dame} = 0.0176$  
+Residual variance: $Var_{Resid} = 1.372$
+
+## Task 4
+
+For the sire effect only a random intercept will be used, while the dame effect 
+will be modeled using a random intercept and a random slope with correlation.
+
+```{r task_4_1}
+mod_raneff_sum <- summary(lmer(yield ~ soil + (1 | sire) + (soil | dame),
+                               wh_df))
+mod_raneff_sum
+
+raneff_coef <- round(coef(mod_raneff_sum), 3)
+```
+
+### Fixed Effects
+
+Intercept: $\beta_{Incp} = `r raneff_coef[1, 1]`, p = `r raneff_coef[1, 5]`$  
+Eff. of Soil: $\beta_{soil} = `r raneff_coef[2, 1]`,$
+$p = `r raneff_coef[2, 5]`$  
+
+### Random Effects
+
+Variance of dame intercept: $Var_{Incp, sire} = 1.861$  
+Variance of dame effect on yield: $Var_{slope, dame} = 0.017$  
+Variance of sire intercept: $Var_{Incp, sire} = 0.719$  
+Residual variance: $Var_{Resid} = 0.930$
