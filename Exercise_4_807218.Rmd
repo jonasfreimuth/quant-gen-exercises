@@ -1,0 +1,53 @@
+---
+title: "Exercise 4"
+author: "Jonas Freimuth, 807218"
+date: "17 11 2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+require("dplyr",      quietly = TRUE)
+require("tidyr",      quietly = TRUE)
+require("tidyselect", quietly = TRUE)
+require("pegas",      quietly = TRUE)
+
+# disable grouping output message
+options(dplyr.summarise.inform = FALSE)
+
+```
+
+## Task 1
+
+```{r task_1_1}
+loci_dat <- VCFloci("data/Ex4.vcf", quiet = TRUE)
+
+n_loci <- nrow(loci_dat)
+```
+
+```{r task_1_2}
+n_snps_is <- sum(is.snp(loci_dat))
+
+
+vi_inf <- getINFO(loci_dat, "VT")
+n_snps_gi <- sum(vi_inf == "SNP")
+
+cat("Variant types:\n")
+cat(paste(unique(vi_inf), collapse = ", "))
+```
+
+\# of SNPs from `is.snp`: `r n_snps_is`  
+\# of SNPs from `getINFO`: `r n_snps_gi`  
+
+$\Rightarrow$ `is.snp` gives `r abs(n_snps_is - n_snps_gi)` less than `getINFO`, 
+due to the former not counting one locus recorded in `VT` as a SNP.
+
+## Task 2
+
+```{r task_2_1}
+vc_dat <- read.vcf("data/Ex4.vcf", quiet = TRUE)
+
+summary(as.loci(vc_dat[[1]]))
+```
+
