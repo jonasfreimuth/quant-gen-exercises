@@ -34,7 +34,7 @@ vi_inf <- getINFO(loci_dat, "VT")
 n_snps_gi <- sum(vi_inf == "SNP")
 
 cat("Variant types:\n")
-cat(paste(unique(vi_inf), collapse = ", "))
+cat(paste(unique(vi_inf), collapse = ", "), "\n")
 ```
 
 \# of SNPs from `is.snp`: `r n_snps_is`  
@@ -48,6 +48,73 @@ due to the former not counting one locus recorded in `VT` as a SNP.
 ```{r task_2_1}
 vc_dat <- read.vcf("data/Ex4.vcf", quiet = TRUE)
 
-summary(as.loci(vc_dat[[1]]))
+loc_1 <- as.loci(vc_dat[[1]])
+
+loc_1_freq <- summary(loc_1)
+loc_1_freq
+
+all_freq <- loc_1_freq$x$allele   / sum(loc_1_freq$x$allele)
+gen_freq <- loc_1_freq$x$genotype / sum(loc_1_freq$x$genotype)
+ 
+maj_all <- all_freq[all_freq == max(all_freq)]
+min_all <- all_freq[all_freq == max(all_freq)]
+```
+
+$\Rightarrow$ * Major allele frequency: $f_{`r names(maj_all)`}$
+$= `r round(maj_all, 3)`$  
+* Minor allele frequency: $f_{`r names(min_all)`}$
+$= `r round(min_all, 3)`$  
+
+## Task 3
+
+```{r task_3_1}
+loc_1_hw <- hw.test(loc_1)
+loc_1_hw
+```
+$\Rightarrow$ The observed genotype frequencies are different from the ones 
+expected under Hardy-Weinberg equilibrium at a high significance level.  
+$\Rightarrow$ $\chi^2$-statistic $\rightarrow$ $\chi^2$-test is performed. (Also
+ a Monte Carlo permutation test is performed, which leads to the `Pr.exact` 
+ result.)
+ 
+```{r task_3_2}
+# expected genotype frequencies
+exp_gen_freq <- c("C/C" = min_all           ^ 2,
+                  "C/T" = min_all * maj_all * 2,
+                  "T/T" = maj_all           ^ 2)
+
+# expected genotype numbers
+exp_gen_num  <- exp_gen_freq * nrow(loc_1)
+
+# observed genotype numbers
+obs_gen_num  <- gen_freq     * nrow(loc_1)
+
+# calculate chi_sq statistic
+chi_sq <- sum(((obs_gen_num - exp_gen_num) ^ 2) / exp_gen_num)
+
+# get pval from chi_sq statistic
+pval_hw_loc_1 <- pchisq(chi_sq, 1, lower.tail = FALSE)
+```
+ 
+ 
+## Task 4
+
+```{r task_4_1}
+loci_11_20 <- as.loci(vc_dat[11:20 , apply(is.phased(vc_dat), 2, all)])
+
+loc_vec <- 11:21
+n       <- length(loc_vec)
+
+ld_score_mat <- matrix(-1, nrow = n, ncol = n)
+
+for (i in loc_vec) {
+  
+  for (j in (i + 1):loc_vec[n]) {
+    
+    ld_score_mat[i, j] <- LD(vc_dat, c(i, j))
+    
+  }
+  
+}
 ```
 
