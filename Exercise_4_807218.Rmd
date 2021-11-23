@@ -94,27 +94,71 @@ chi_sq <- sum(((obs_gen_num - exp_gen_num) ^ 2) / exp_gen_num)
 
 # get pval from chi_sq statistic
 pval_hw_loc_1 <- pchisq(chi_sq, 1, lower.tail = FALSE)
+
+pval_hw_loc_1
 ```
- 
+ $\Rightarrow$ My own method of calculation agrees with the `pegas` function.
  
 ## Task 4
 
 ```{r task_4_1}
-loci_11_20 <- as.loci(vc_dat[11:20 , apply(is.phased(vc_dat), 2, all)])
+loci_11_20 <- as.loci(vc_dat[, 11:20])
 
-loc_vec <- 11:21
-n       <- length(loc_vec)
+ld_score_mat <- as.matrix(LDscan(loci_11_20, quiet = TRUE))
 
-ld_score_mat <- matrix(-1, nrow = n, ncol = n)
-
-for (i in loc_vec) {
-  
-  for (j in (i + 1):loc_vec[n]) {
-    
-    ld_score_mat[i, j] <- LD(vc_dat, c(i, j))
-    
-  }
-  
-}
+opar <- par(oma = rep(0.5, 4))
+LDmap(ld_score_mat, asp = 1)
 ```
 
+```{r task_4_2}
+max_ld_score <- which(ld_score_mat == max(ld_score_mat), arr.ind = TRUE)
+max_ld_pair  <- row.names(max_ld_score)
+```
+
+$\Rightarrow$ The highest scoring SNP pair is locus `r max_ld_pair[1]` and locus
+`r max_ld_pair[2]`, with $D_{adj} = `r max(ld_score_mat)`$
+
+```{r task_4_3}
+# extract highest score loci
+loc_ab <- as.loci(loci_11_20[ , max_ld_score[1, ]])
+
+# extract allele freqs
+loc_ab_freq <- summary(loc_ab)
+
+ab_all_freq <- sapply(loc_ab_freq, function(x) {
+   x$allele / sum(x$allele)
+})
+
+# find major allels
+ab_maj_alls <- sapply(loc_ab_freq, function(x) {
+   names(x$allele[x$allele == max(x$allele)])
+})
+
+# get genotype freqs of individuals
+hap <- haplotype(loc_ab, quiet = TRUE)
+
+# scale to get relative freqs
+ab_gen_freq <- (attr(hap, "freq") / sum(attr(hap, "freq")))
+
+# get index of major major genotype
+AB_ind <- which(hap[1, ] == ab_maj_alls[1] & hap[2, ] == ab_maj_alls[2])
+
+# get rel freq of major major genotype
+p_AB <- ab_gen_freq[AB_ind]
+
+# get indices of major allele freqs
+A_ind <- which(ab_all_freq == max(ab_all_freq[, 1]), arr.ind = TRUE)
+B_ind <- which(ab_all_freq == max(ab_all_freq[, 2]), arr.ind = TRUE)
+
+# get expected rel freq of major major genotype
+p_A.p_B <- ab_all_freq[A_ind] * ab_all_freq[B_ind]
+
+# calculate disequilirium score and adjusted score
+D <- p_AB - p_A.p_B
+D_adj <- D / sqrt(prod(ab_all_freq))
+
+# display adjusted score
+D_adj
+```
+
+$\Rightarrow$ The manual method returns the same result as the `pegas` function.
