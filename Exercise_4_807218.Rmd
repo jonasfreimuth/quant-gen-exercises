@@ -57,7 +57,7 @@ all_freq <- loc_1_freq$x$allele   / sum(loc_1_freq$x$allele)
 gen_freq <- loc_1_freq$x$genotype / sum(loc_1_freq$x$genotype)
  
 maj_all <- all_freq[all_freq == max(all_freq)]
-min_all <- all_freq[all_freq == max(all_freq)]
+min_all <- all_freq[all_freq == min(all_freq)]
 ```
 
 $\Rightarrow$ * Major allele frequency: $f_{`r names(maj_all)`}$
@@ -79,9 +79,9 @@ $\Rightarrow$ $\chi^2$-statistic $\rightarrow$ $\chi^2$-test is performed. (Also
  
 ```{r task_3_2}
 # expected genotype frequencies
-exp_gen_freq <- c("C/C" = min_all           ^ 2,
+exp_gen_freq <- c("C/C" = maj_all           ^ 2,
                   "C/T" = min_all * maj_all * 2,
-                  "T/T" = maj_all           ^ 2)
+                  "T/T" = min_all           ^ 2)
 
 # expected genotype numbers
 exp_gen_num  <- exp_gen_freq * nrow(loc_1)
@@ -153,7 +153,7 @@ B_ind <- which(ab_all_freq == max(ab_all_freq[, 2]), arr.ind = TRUE)
 # get expected rel freq of major major genotype
 p_A.p_B <- ab_all_freq[A_ind] * ab_all_freq[B_ind]
 
-# calculate disequilirium score and adjusted score
+# calculate disequilibrium score and adjusted score
 D <- p_AB - p_A.p_B
 D_adj <- D / sqrt(prod(ab_all_freq))
 
