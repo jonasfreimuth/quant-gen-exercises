@@ -1,0 +1,20 @@
+---
+title: "Exercise 5"
+author: "Jonas Freimuth, 807218"
+date: "24 11 2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# disable grouping output message
+options(dplyr.summarise.inform = FALSE)
+
+```
+
+## Task 1
+
+```{r task_1_1}
+
+```
