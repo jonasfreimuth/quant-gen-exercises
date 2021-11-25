@@ -8,6 +8,8 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+library("EMSaov")
+
 # disable grouping output message
 options(dplyr.summarise.inform = FALSE)
 
@@ -15,6 +17,95 @@ options(dplyr.summarise.inform = FALSE)
 
 ## Task 1
 
-```{r task_1_1}
+### Scenario (i)
 
+$$ EMS_{A}   = \sigma^2_e + n \sigma_{\alpha \beta \gamma} + c n \sigma_{\alpha \beta}  + b n \sigma_{\alpha \gamma} + b c n \sigma^2_{\alpha}$$
+$$EMS_{B}   = \sigma^2_e + n \sigma_{\alpha \beta \gamma} + a n \sigma_{\beta  \gamma} + c n \sigma_{\alpha \beta}  + a c n \sigma^2_{\beta}$$
+$$EMS_{C}   = \sigma^2_e + n \sigma_{\alpha \beta \gamma} + b n \sigma_{\alpha \gamma} + a n \sigma_{\beta  \gamma} + a b n \sigma^2_{\gamma}$$
+$$EMS_{AB}  = \sigma^2_e + n \sigma_{\alpha \beta \gamma} + c n \sigma_{\alpha \beta}$$
+$$EMS_{AC}  = \sigma^2_e + n \sigma_{\alpha \beta \gamma} + b n \sigma_{\alpha \gamma}$$
+$$EMS_{BC}  = \sigma^2_e + n \sigma_{\alpha \beta \gamma} + a n \sigma_{\beta  \gamma}$$
+$$EMS_{ABC} = \sigma^2_e + n \sigma_{\alpha \beta \gamma}$$
+
+### Scenario (ii)
+
+$$EMS_{A}   = \sigma^2_e + n \sigma_{\alpha \beta \gamma} + c n \sigma_{\alpha \beta}  + b n \sigma_{\alpha \gamma} + b c n \theta^2_{\alpha}$$
+$$EMS_{B}   = \sigma^2_e                                  + a n \sigma_{\beta  \gamma} + c n \sigma_{\alpha \beta}  + a c n \sigma^2_{\beta}$$
+$$EMS_{C}   = \sigma^2_e                                  + b n \sigma_{\alpha \gamma} + a n \sigma_{\beta  \gamma} + a b n \sigma^2_{\gamma}$$
+$$EMS_{AB}  = \sigma^2_e + n \sigma_{\alpha \beta \gamma} + c n \sigma_{\alpha \beta}$$
+$$EMS_{AC}  = \sigma^2_e + n \sigma_{\alpha \beta \gamma} + b n \sigma_{\alpha \gamma}$$
+$$EMS_{BC}  = \sigma^2_e                                  + a n \sigma_{\beta  \gamma}$$
+$$EMS_{ABC} = \sigma^2_e + n \sigma_{\alpha \beta \gamma}$$
+
+
+## Task 2
+
+```{r task_2_1}
+mz_yld_1 <- read.csv("data/Ex5_1.csv")
+
+rnd_yld_aov <- EMSanova(yield ~ geno + env, mz_yld_1, type = c("R", "R"))
+rnd_yld_aov
 ```
+
+```{r task_2_2}
+n <- 6
+a <- 3
+b <- 2
+
+gen_MS <- rnd_yld_aov$MS[1]
+env_MS <- rnd_yld_aov$MS[2]
+int_MS <- rnd_yld_aov$MS[3]
+err_MS <- rnd_yld_aov$MS[4]
+
+gen_var_com <- err_MS + n * int_MS + b * n * gen_MS
+env_var_com <- err_MS + n * int_MS + a * b * env_MS
+int_var_com <- err_MS + n * int_MS
+```
+
+$\Rightarrow$ Variance components:  
+* Genetic: $EMS_{gen} = `r gen_var_com`$  
+* Environment: $EMS_{env} = `r env_var_com`$  
+* Interaction: $EMS_{int} = `r int_var_com`$
+
+The only component with significant variance at $\alpha = 0.01$ is the 
+interaction of environment and genotype.
+
+Each $F$-value is computed by the formula  
+* $F_{A} = MS_A / MS_{AB}$, if A is a single effect  
+* $F_{AB} = MS_{AB} / MS_E$, if AB is an interaction effect
+
+## Task 3
+
+```{r task_3_1}
+mz_yld_2 <- read.csv("data/Ex5_2.csv")
+
+nst_yld_aov <- EMSanova(yield ~ sire + dame, mz_yld_2, type = c("R", "R"),
+                        nested = c(NA, "sire"))
+nst_yld_aov
+```
+
+
+```{r task_3_2}
+n <- 21
+a <- 2
+b <- 5
+
+sir_MS <- nst_yld_aov$MS[1]
+dam_MS <- nst_yld_aov$MS[2]
+err_MS <- rnd_yld_aov$MS[3]
+
+sir_var_com <- err_MS + n * dam_MS + b * n * sir_MS
+dam_var_com <- err_MS + n * dam_MS
+```
+
+
+$\Rightarrow$ Variance components:  
+* Sire: $EMS_{sir} = `r sir_var_com`$  
+* Dame nested in sire: $EMS_{dam} = `r dam_var_com`$  
+
+The only component with significant variance at $\alpha = 0.01$ is dame nested
+in sire.  
+
+Each $F$-value is computed by the formula:  
+* $F_{A} = MS_A / MS_B$, if A is a single effect and B is nested in A   
+* $F_{B} = MS_{B} / MS_E$, if B is a nested effect  
