@@ -1,0 +1,34 @@
+---
+title: "Exercise 6"
+author: "Jonas Freimuth, 807218"
+date: "1 12 2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library("lme4")
+
+```
+
+## Task 1
+
+```{r task_1_1}
+
+```
+
+
+## Task 2
+
+```{r task_2_1}
+
+```
+
+
+## Task 3
+
+```{r task_3_1}
+
+```
+
