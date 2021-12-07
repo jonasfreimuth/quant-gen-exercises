@@ -9,26 +9,113 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 
 library("lme4")
-
+library("lmerTest")
 ```
 
 ## Task 1
 
 ```{r task_1_1}
+mz_yld_1 <- read.csv("data/Ex5_1.csv")
 
+mz_yld_lme <- lmer(yield ~ (1 | geno) + (1 | env) + (1 | geno:env), mz_yld_1)
+summary(mz_yld_lme)
 ```
 
+Linear Mixed Effects Model variance components:  
+* Genetic:      3.789  
+* Environment: 18.535  
+* Interaction:  0.648  
+
+```{r task_1_2}
+rnd_yld_aov <- EMSanova(yield ~ geno + env, mz_yld_1, type = c("R", "R"))
+
+n <- 6
+a <- 3
+b <- 2
+
+gen_MS <- rnd_yld_aov$MS[1]
+env_MS <- rnd_yld_aov$MS[2]
+int_MS <- rnd_yld_aov$MS[3]
+err_MS <- rnd_yld_aov$MS[4]
+
+gen_var_com <- (gen_MS - int_MS) / (b * n) 
+env_var_com <- (env_MS - int_MS) / (a * n) 
+int_var_com <- (int_MS - err_MS) /   (n)   
+
+cat("ANOVA Variance components:\n")
+cat("\tGenetic:\t",     gen_var_com, "\n")
+cat("\tEnvironment:\t", env_var_com, "\n")
+cat("\tInteraction:\t", int_var_com, "\n")
+```
+
+$\Rightarrow$ Both ways of determine variance components give the same result.
 
 ## Task 2
 
+### i)
 ```{r task_2_1}
-
+ranef(mz_yld_lme)$geno
 ```
 
 
+### ii)
+
+```{r task_2_2}
+mz_yld_lme_alt <- lmer(yield ~ (1 | geno) + (1 | env), mz_yld_1)
+
+anova(mz_yld_lme, mz_yld_lme_alt, test = "LRT")
+```
+
+$\Rightarrow$ The interaction effect of genotype and environmtent is significant.  
+
 ## Task 3
 
-```{r task_3_1}
+### i)
 
+```{r task_3_1}
+mz_yld_2 <- read.csv("data/Ex5_2.csv")
+
+mz_yld_lme_nst <- lmer(yield ~ (1 | sire/dame) + (1 | sire), mz_yld_2)
+summary(mz_yld_lme_nst)
+```
+
+
+
+```{r task_3_2}
+nst_yld_aov <- EMSanova(yield ~ sire + dame, mz_yld_2, type = c("R", "R"),
+                        nested = c(NA, "sire"))
+
+n <- 21
+a <- 2
+b <- 5
+
+sir_MS <- nst_yld_aov$MS[1]
+dam_MS <- nst_yld_aov$MS[2]
+err_MS <- nst_yld_aov$MS[3]
+
+sir_var_com <- (sir_MS - dam_MS) / (n * b)
+dam_var_com <- (dam_MS - err_MS) /   (n)
+
+cat("ANOVA Variance components:\n")
+cat("\tSire:\t\t\t",            sir_var_com, "\n")
+cat("\tDame nested in Sire:\t", dam_var_com, "\n")
+```
+
+$\Rightarrow$ As the sum of the sire effects above is $1.436$, the ANOVA also
+agrees with the LME model here.
+
+
+### ii)
+
+Those accessions sharing both parents are full-sib (e.g. all combinations of 
+sire 1 and dame 1), while those that share only one parent are half-sib (e.g. 
+combinations of sire 1 with dame 1 to 5).
+
+As $Cov(HalfSibs) = \frac{\sigma_A^2}{4}$ and 
+$Cov(FullSibs) = \frac{\sigma_A^2}{2} + \frac{\sigma_D^2}{4}$ $\Rightarrow$ 
+$\sigma_A^2 = 4 * Cov(HalfSibs)$ and $\sigma_D^2 = 4 * Cov(FullSibs) - 2 \sigma_A^2$
+
+```{r task 3_3}
+cov()
 ```
 
