@@ -1,0 +1,93 @@
+---
+title: "Exercise 3"
+author: "Jonas Freimuth, 807218"
+date: "8 12 2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library("EMSaov")
+library("lme4")
+```
+
+## Task 1
+
+```{r task_1_1}
+snp_met_dat <- read.csv("data/Ex7_1.csv")
+
+snp_met_aov <- anova(lm(metabolite ~ ., data = snp_met_dat))
+snp_met_aov
+```
+
+```{r task_1_2}
+row.names(snp_met_aov)[snp_met_aov[["Pr(>F)"]] <= 0.01]
+```
+
+```{r task_1_3}
+for (snp in paste0("snp", c(1:8))) {
+  cat("\n", snp, ":", "\n", sep = "")
+  print(anova(lm(as.formula(paste("metabolite ~", snp)), snp_met_dat)))
+}
+```
+
+## Task 2
+
+```{r task_2_1}
+tis_trs_dat <- read.csv("data/Ex7_2.csv")
+
+t.test(transcription ~ tissue, tis_trs_dat)
+
+anova(lm(transcription ~ tissue, tis_trs_dat))
+```
+
+$\Rightarrow$ Both $t$ and $F$ statistic will result in the same p-value in the
+case of a two-mean comparison. Also the $F$-statistic is the square of the $t$-
+statistic.
+
+## Task 3
+
+```{r task_3_1}
+bw_dat <- read.csv("data/Ex7_3.csv")
+
+bw_dat$age <- as.factor(bw_dat$age) 
+
+anova(lm(weight ~ age * gender, bw_dat))
+```
+
+$\Rightarrow$ Means only differ between age groups, other factors have no 
+influence.
+
+```{r task_3_2}
+EMSanova(weight ~ age + gender, bw_dat, type = c("R", "F"))
+```
+$\Rightarrow$ When modeling age as a random effect, we observe changes in 
+significance due to changes in the way the F-values are computed: The effect of 
+gender becomes even less significant.
+
+## Task 4
+```{r task_4_1}
+pig_dat <- read.csv("data/Ex7_4.csv")
+
+pig_lm <- lmer(production ~ sex + (1 | population), pig_dat)
+
+summary(pig_lm)
+```
+
+```{r task_4_2}
+ranef(pig_lm)$population
+```
+
+```{r task_4_3}
+fixef_both <- fixef(pig_lm)
+
+sex_lvls <- unique(pig_dat$sex)
+
+fixef <- sex_lvls * fixef_both[["sex"]] + fixef_both[["(Intercept)"]]
+names(fixef) <- sex_lvls
+
+cat("Fixed effect coefficients for sex:", "\n")
+fixef
+```
+
