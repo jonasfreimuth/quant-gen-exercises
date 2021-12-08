@@ -3,6 +3,8 @@ title: "Exercise 6"
 author: "Jonas Freimuth, 807218"
 date: "1 12 2021"
 output: pdf_document
+editor_options: 
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -10,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library("lme4")
 library("lmerTest")
+library("EMSaov")
 ```
 
 ## Task 1
@@ -75,7 +78,7 @@ $\Rightarrow$ The interaction effect of genotype and environmtent is significant
 ```{r task_3_1}
 mz_yld_2 <- read.csv("data/Ex5_2.csv")
 
-mz_yld_lme_nst <- lmer(yield ~ (1 | sire/dame) + (1 | sire), mz_yld_2)
+mz_yld_lme_nst <- lmer(yield ~ (1 | sire/dame), mz_yld_2)
 summary(mz_yld_lme_nst)
 ```
 
@@ -108,14 +111,12 @@ agrees with the LME model here.
 ### ii)
 
 Those accessions sharing both parents are full-sib (e.g. all combinations of 
-sire 1 and dame 1), while those that share only one parent are half-sib (e.g. 
+sire 1 and dame 1), while those that share only one parent are half-sib (e.g.
 combinations of sire 1 with dame 1 to 5).
 
 As $Cov(HalfSibs) = \frac{\sigma_A^2}{4}$ and 
-$Cov(FullSibs) = \frac{\sigma_A^2}{2} + \frac{\sigma_D^2}{4}$ $\Rightarrow$ 
-$\sigma_A^2 = 4 * Cov(HalfSibs)$ and $\sigma_D^2 = 4 * Cov(FullSibs) - 2 \sigma_A^2$
-
-```{r task 3_3}
-cov()
-```
+$Cov(FullSibs) = \frac{\sigma_A^2}{2} + \frac{\sigma_D^2}{4}$  
+$\Rightarrow$
+$\sigma_A^2 = 4 * Cov(HalfSibs)$ and 
+$\sigma_D^2 = 4 * Cov(FullSibs) - 2 \sigma_A^2$
 
