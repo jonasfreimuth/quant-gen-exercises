@@ -26,13 +26,16 @@ $$\Rightarrow \sigma_A^2 = 2 * Cov(FullSibs) = 2 * \sigma_{family}^2$$
 ```{r task_1_1}
 biom_dat <- read.csv("data/Ex8_1.csv")
 
-biom_aov_sum <- summary(aov(biomass ~ family, biom_dat))
+# this method of extracting family variance was inspired by Philipps solution
+biom_lme <- lmer(biomass ~ (1 | family), biom_dat)
 
-var_fam  <- biom_aov_sum[[1]][["Sum Sq"]][1]
+vc <- VarCorr(biom_lme)
+
+var_fam  <- as.numeric(vc[1])
 
 var_phen <- var(biom_dat$biomass)
 
-h2_biom  <- var_fam / var_phen
+h2_biom  <- (2 * var_fam) / var_phen
 ```
 
 $\Rightarrow$ The narrow sense heritablility of biomass $h_{biomass}^2$
@@ -54,7 +57,9 @@ var_sire <- as.numeric(vc[2])
 sig_A <- 4 *  var_sire
 sig_D <- 4 * (var_sire + var_dame) - 2 * (sig_A)
 
-h2_yld <- sig_A / sig_D
+var_phen <- var(yld_dat$yield)
+
+h2_yld <- sig_A / var_phen
 ```
 
 $\Rightarrow$ The narrow sense heritablility of the yield $h_{yield}^2$ is
