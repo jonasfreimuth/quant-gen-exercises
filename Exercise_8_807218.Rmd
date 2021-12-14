@@ -1,0 +1,91 @@
+---
+title: "Exercise 8"
+author: "Jonas Freimuth, 807218"
+date: "14 12 2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library("lme4")
+library("dplyr")
+```
+
+## Task 1
+
+Narrow sense heritability: 
+
+$$h^2 = \frac{\sigma_A^2}{\sigma_P^2}$$
+
+$$Cov(FullSibs) = \frac{\sigma_A^2}{2} + \frac{\sigma_D^2}{4},$$ 
+here: $\sigma_D^2 = 0$
+
+$$\Rightarrow \sigma_A^2 = 2 * Cov(FullSibs) = 2 * \sigma_{family}^2$$
+
+```{r task_1_1}
+biom_dat <- read.csv("data/Ex8_1.csv")
+
+biom_aov_sum <- summary(aov(biomass ~ family, biom_dat))
+
+var_fam  <- biom_aov_sum[[1]][["Sum Sq"]][1]
+
+var_phen <- var(biom_dat$biomass)
+
+h2_biom  <- var_fam / var_phen
+```
+
+$\Rightarrow$ The narrow sense heritablility of biomass $h_{biomass}^2$
+is $`r round(h2_biom, 2)`$
+
+## Task 2
+
+```{r task_2_1}
+yld_dat <- read.csv("data/Ex8_2.csv")
+
+yld_dat_lme_nest <- lmer(yield ~ (1 | sire/dame), yld_dat)
+
+vc <- VarCorr(yld_dat_lme_nest)
+
+var_dame <- as.numeric(vc[1])
+var_sire <- as.numeric(vc[2])
+
+# see Exercise 6: Task 3 ii
+sig_A <- 4 *  var_sire
+sig_D <- 4 * (var_sire + var_dame) - 2 * (sig_A)
+
+h2_yld <- sig_A / sig_D
+```
+
+$\Rightarrow$ The narrow sense heritablility of the yield $h_{yield}^2$ is
+$`r round(h2_yld, 2)`$
+
+## Task 3
+
+```{r task_3_1}
+bp_1_dat <- read.csv("data/Ex8_3.csv")
+
+cov_po <- with(bp_1_dat, cov(offspring, parent))
+var_p  <- var(bp_1_dat$parent)
+
+h2_bp_1 <- cov_po / var_p
+```
+
+$\Rightarrow$ The narrow sense heritablility of the blood pressure under the 
+male offspring design $h_{blood\ pressure, 1}^2$ is $`r round(h2_bp_1, 2)`$
+
+
+## Task 4
+```{r task_4_1}
+bp_2_dat <- read.csv("data/Ex8_4.csv") %>% 
+  rowwise() %>% 
+  mutate(mean_parent = mean(parent1, parent2))
+
+cov_mpo <- with(bp_2_dat, cov(offspring, mean_parent))
+var_mp  <- var(bp_2_dat$mean_parent)
+
+h2_bp_2 <- cov_mpo / var_mp
+```
+
+$\Rightarrow$ The narrow sense heritablility of the blood pressure under the 
+two parent design $h_{blood\ pressure, 2}^2$ is $`r round(h2_bp_2, 2)`$
