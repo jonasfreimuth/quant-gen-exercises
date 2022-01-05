@@ -1,5 +1,5 @@
 ---
-title: "Exercise 3"
+title: "Exercise 7"
 author: "Jonas Freimuth, 807218"
 date: "8 12 2021"
 output: pdf_document
