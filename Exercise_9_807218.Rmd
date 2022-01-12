@@ -78,7 +78,7 @@ A[c(3), c(4)] <- 0.5
 A[c(6), c(7)] <- 0.25
 A[lower.tri(A)] <- t(A)[lower.tri(A)]
 
-y <- c(10, 20, 35, 38, 30, 25, 42)
+y <- c(10, 20, 35, 38, 30, 24, 42)
 
 lambda <- 70 / 30
 
@@ -101,7 +101,7 @@ $\Rightarrow$ The breeding values from the animal model are `r round(r[-1], 2)`.
 n <- 7
 p <- 2 # ?
 
-y <- c(10, 20, 35, 38, 30, 25, 42)
+y <- c(10, 20, 35, 38, 30, 24, 42)
 
 R <- 70 * diag(n)
 G <- 30 * A
@@ -121,5 +121,36 @@ $\Rightarrow$ The breeding values from the Handerson formulas are
 ## Task 4
 
 ```{r task_4_1}
+n <- 5
 
+A <- diag(n)
+
+A[c(1, 2), c(3:5)] <- 0.5
+A[c(3)   , c(4:5)] <- 0.5
+A[c(4)   , c(5)  ] <- 0.5
+A[lower.tri(A)] <- t(A)[lower.tri(A)]
+A
+
+y <- c(42, 21, 26, 35)
+
+lambda <- 70 / 30
+
+R <- 70 * diag(length(y))
+G <- 30 * A
+
+Z <- matrix(0, length(y), n)
+Z[1, 1] <- 1
+Z[2, 3] <- 1
+Z[3, 4] <- 1
+Z[4, 5] <- 1
+
+
+V <- Z %*% G %*% t(Z) + R
+
+X <- matrix(1, length(y), 1)
+
+P <- solve(t(X) %*% solve(V) %*% X) %*% t(X) %*% solve(V)
+
+BLUE <- P %*% y
+BLUP <- G %*% t(Z) %*% solve(V) %*% (y - X %*% BLUE)
 ```
