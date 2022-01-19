@@ -1,0 +1,158 @@
+---
+title: "Exercise 10"
+author: "Jonas Freimuth, 807218"
+date: "19 01 2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library("lme4")
+library("dplyr")
+library("ggplot2")
+library("data.table")
+library("fastDummies")
+```
+
+## Task 1
+
+```{bash task_1_1}
+ls data/plink_data/exc_10
+```
+
+$\Rightarrow$ The file names indicate binary format.  
+
+```{bash task_1_2}
+plink --bfile data/plink_data/exc_10/gwa --noweb
+```
+
+$\Rightarrow$ 306102 SNPs in 4000 samples, 2000 males and females each, and 
+2000 cases and control samples.
+
+## Task 2
+
+```{bash task_2_1}
+plink --bfile data/plink_data/exc_10/gwa --thin 0.1 --make-bed --out \
+  data/plink_data/exc_10/gwa_thin  --noweb
+```
+
+```{bash task_2_2}
+plink --bfile data/plink_data/exc_10/gwa_thin --maf 0.03 --geno 0.1 --assoc \
+  --adjust --out data/plink_data/exc_10/out_2_2 --noweb
+```
+
+```{r task_2_3}
+assoc_res <- fread("data/plink_data/exc_10/out_2_2.assoc.adjusted")
+
+head(assoc_res)
+
+max_sig <- min(assoc_res$FDR_BY)
+npv_sig <- sum(assoc_res$FDR_BY < 0.05)
+```
+
+$\Rightarrow$ After adjusting for multiple testing, the most significant 
+association is at $p = `r max_sig`$, there are $`r npv_sig`$ SNPs with an 
+interaction which is significant at all at $\alpha = 0.05$.
+
+## Task 3
+
+```{r task_3_1}
+max_sig_adj <- max(assoc_res$UNADJ[assoc_res$FDR_BY < 0.05])
+
+thr <- 3
+
+n_bel_thr <- sum(-log10(assoc_res$UNADJ) > thr)
+
+ggplot(assoc_res, aes(CHR, - log10(UNADJ), col = CHR)) +
+  geom_jitter() + 
+  geom_hline(yintercept = thr, lty = 2, col = "gray") +
+  scale_color_viridis_c() + 
+  labs(x = "Chromosome",
+       y = "-log10(P)",
+       title = "Manhattan plot",
+       subtitle = paste0("Logistic regression,\nN(p < ", 10 ^ (- thr), ") = ",
+                        n_bel_thr)) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+```
+
+## Task 4
+
+```{bash task_4_1_1}
+plink --bfile data/plink_data/exc_10/gwa_thin --maf 0.03 --geno 0.1 --model \
+  --model-trend --adjust --out data/plink_data/exc_10/out_ca_test --noweb
+```
+
+```{r task_4_1_2}
+trend_res <- fread("data/plink_data/exc_10/out_ca_test.model.trend.adjusted")
+
+head(trend_res)
+
+max_sig <- min(trend_res$FDR_BY)
+npv_sig <- sum(trend_res$FDR_BY < 0.05)
+
+max_sig_adj <- max(trend_res$UNADJ[trend_res$FDR_BY < 0.05])
+
+thr <- 3
+
+n_bel_thr <- sum(-log10(trend_res$UNADJ) > thr)
+
+ggplot(trend_res, aes(CHR, - log10(UNADJ), col = CHR)) +
+  geom_jitter() + 
+  geom_hline(yintercept = thr, lty = 2, col = "gray") +
+  scale_color_viridis_c() + 
+  labs(x = "Chromosome",
+       y = "-log10(P)",
+       title = "Manhattan plot",
+       subtitle = paste0("Logistic regression,\nN(p < ", 10 ^ (- thr), ") = ",
+                        n_bel_thr)) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+$\Rightarrow$ After adjusting for multiple testing, the most significant 
+association is at $p = `r max_sig`$, there are $`r npv_sig`$ SNPs with an 
+interaction which is significant at all at $\alpha = 0.05$.
+
+```{bash task_4_2_1}
+plink --bfile data/plink_data/exc_10/gwa_thin --maf 0.03 --geno 0.1 --logistic \
+  --adjust --out data/plink_data/exc_10/out_log_reg --noweb
+```
+
+```{r task_4_2_2}
+logistic_res <- fread("data/plink_data/exc_10/out_log_reg.assoc.logistic.adjusted")
+
+head(logistic_res)
+
+max_sig <- min(logistic_res$FDR_BY)
+min_sig <- sum(logistic_res$FDR_BY < 0.05)
+
+max_sig_adj <- max(logistic_res$UNADJ[logistic_res$FDR_BY < 0.05])
+
+thr <- 3
+
+n_bel_thr <- sum(-log10(logistic_res$UNADJ) > thr)
+
+ggplot(logistic_res, aes(CHR, - log10(UNADJ), col = CHR)) +
+  geom_jitter() + 
+  geom_hline(yintercept = thr, lty = 2, col = "gray") +
+  scale_color_viridis_c() + 
+  labs(x = "Chromosome",
+       y = "-log10(P)",
+       title = "Manhattan plot",
+       subtitle = paste0("Logistic regression,\nN(p < ", 10 ^ (- thr), ") = ",
+                        n_bel_thr)) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+```
+
+$\Rightarrow$ After adjusting for multiple testing, the most significant 
+association is at $p = `r max_sig`$, there are $`r npv_sig`$ SNPs with an 
+interaction which is significant at all at $\alpha = 0.05$.
+
+
+$\Rightarrow$ All methods give roughly the same results.
+
