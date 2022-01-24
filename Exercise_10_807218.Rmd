@@ -18,13 +18,13 @@ library("fastDummies")
 ## Task 1
 
 ```{bash task_1_1}
-ls data/plink_data/exc_10
+ls data/plink_data/exc_10/gwa
 ```
 
 $\Rightarrow$ The file names indicate binary format.  
 
 ```{bash task_1_2}
-plink --bfile data/plink_data/exc_10/gwa --noweb
+plink --bfile data/plink_data/exc_10/gwa/gwa --noweb
 ```
 
 $\Rightarrow$ 306102 SNPs in 4000 samples, 2000 males and females each, and 
@@ -33,17 +33,21 @@ $\Rightarrow$ 306102 SNPs in 4000 samples, 2000 males and females each, and
 ## Task 2
 
 ```{bash task_2_1}
-plink --bfile data/plink_data/exc_10/gwa --thin 0.1 --make-bed --out \
-  data/plink_data/exc_10/gwa_thin  --noweb
+mkdir data/plink_data/exc_10/gwa_thin
+
+plink --bfile data/plink_data/exc_10/gwa/gwa --thin 0.1 --make-bed --out \
+  data/plink_data/exc_10/gwa_thin/gwa_thin  --noweb
 ```
 
 ```{bash task_2_2}
-plink --bfile data/plink_data/exc_10/gwa_thin --maf 0.03 --geno 0.1 --assoc \
-  --adjust --out data/plink_data/exc_10/out_2_2 --noweb
+mkdir -p data/plink_data/exc_10/out/all_test
+
+plink --bfile data/plink_data/exc_10/gwa_thin/gwa_thin --maf 0.03 --geno 0.1 \
+  --assoc --adjust --out data/plink_data/exc_10/out/all_test/all_test --noweb
 ```
 
 ```{r task_2_3}
-assoc_res <- fread("data/plink_data/exc_10/out_2_2.assoc.adjusted")
+assoc_res <- fread("data/plink_data/exc_10/out/all_test/all_test.assoc.adjusted")
 
 head(assoc_res)
 
@@ -81,12 +85,15 @@ ggplot(assoc_res, aes(CHR, - log10(UNADJ), col = CHR)) +
 ## Task 4
 
 ```{bash task_4_1_1}
-plink --bfile data/plink_data/exc_10/gwa_thin --maf 0.03 --geno 0.1 --model \
-  --model-trend --adjust --out data/plink_data/exc_10/out_ca_test --noweb
+mkdir -p data/plink_data/exc_10/out/ca_test
+
+plink --bfile data/plink_data/exc_10/gwa_thin/gwa_thin --maf 0.03 --geno 0.1 \
+  --model --model-trend --adjust --out data/plink_data/exc_10/out/ca_test \
+  --noweb
 ```
 
 ```{r task_4_1_2}
-trend_res <- fread("data/plink_data/exc_10/out_ca_test.model.trend.adjusted")
+trend_res <- fread("data/plink_data/exc_10/out/ca_test.model.trend.adjusted")
 
 head(trend_res)
 
@@ -117,12 +124,14 @@ association is at $p = `r max_sig`$, there are $`r npv_sig`$ SNPs with an
 interaction which is significant at all at $\alpha = 0.05$.
 
 ```{bash task_4_2_1}
+mkdir -p data/plink_data/exc_10/out/log_reg
+
 plink --bfile data/plink_data/exc_10/gwa_thin --maf 0.03 --geno 0.1 --logistic \
-  --adjust --out data/plink_data/exc_10/out_log_reg --noweb
+  --adjust --out data/plink_data/exc_10/out/log_reg --noweb
 ```
 
 ```{r task_4_2_2}
-logistic_res <- fread("data/plink_data/exc_10/out_log_reg.assoc.logistic.adjusted")
+logistic_res <- fread("data/plink_data/exc_10/out/log_reg.assoc.logistic.adjusted")
 
 head(logistic_res)
 
