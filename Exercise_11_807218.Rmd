@@ -1,0 +1,68 @@
+---
+title: "Exercise 11"
+author: "Jonas Freimuth, 807218"
+date: "26 01 2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+gi_out <- "data/GAPIT_out"
+if (! dir.exists(gi_out)){
+  dir.create(gi_out, recursive = TRUE)
+}
+
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = gi_out)
+
+library("data.table")
+library("GAPIT3")
+
+# library("ggplot2")
+# library("fastDummies")
+```
+
+## Task 1
+
+```{r task 1_1}
+gen_dat <- read.table("../Ex11_geno.hmp", head = FALSE)
+phn_dat <- read.csv("../Ex11_pheno.csv", head = TRUE)
+
+gap <- GAPIT(Y = phn_dat, G = gen_dat, PCA.total = 5)
+```
+
+$\Rightarrow$ $180$ individuals and $3999$ SNPs.  
+
+```{r task_1_2}
+n_gt_lg_3 <- sum(gap$GWAS$P.value < 10 ^ (-3))
+```
+
+$\Rightarrow$ $`r `$ SNP has/have $p < 0.001$.
+
+## Task 2
+
+```{r task_2_1}
+min_p_snp_ind <- which.min(res$P.value)
+min_p_snp_pos <- res[min_p_snp_ind, 2:3]
+```
+
+$\Rightarrow$ The SNP on chromosome `r min_p_snp_pos[1][["Chromosome"]]` at
+position `r min_p_snp_pos[1][["Position"]]` is the most significant. It 
+corresponds to gene AT1G48090 in the TAIR10 reference genome.
+
+```{r task_2_2}
+# library("dplyr")
+# library("magrittr")
+# library("stringr")
+# 
+# ref_g <- fread("ftp://ftp.arabidopsis.org/home/tair/home/tair/Maps/gbrowse_data/TAIR10/TAIR10_GFF3_genes.gff")
+# 
+# pos <- min_p_snp_pos[1][["Position"]]
+# 
+# gene_name <- ref_g %>% 
+#   filter(V1 == "Chr1" & V3 == "gene" & V4 < pos & V5 > pos) %>% 
+#   extract2("V9") %>% 
+#   str_extract("(?<=Name=)[:alnum:]+")
+# 
+# print(gene_name)
+```
+
