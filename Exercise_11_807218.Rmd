@@ -36,13 +36,13 @@ $\Rightarrow$ $180$ individuals and $3999$ SNPs.
 n_gt_lg_3 <- sum(gap$GWAS$P.value < 10 ^ (-3))
 ```
 
-$\Rightarrow$ $`r `$ SNP has/have $p < 0.001$.
+$\Rightarrow$ $`r n_gt_lg_3`$ SNP has/have $p < 0.001$.
 
 ## Task 2
 
 ```{r task_2_1}
-min_p_snp_ind <- which.min(res$P.value)
-min_p_snp_pos <- res[min_p_snp_ind, 2:3]
+min_p_snp_ind <- which.min(gap$GWAS$P.value)
+min_p_snp_pos <- gap$GWAS[min_p_snp_ind, 2:3]
 ```
 
 $\Rightarrow$ The SNP on chromosome `r min_p_snp_pos[1][["Chromosome"]]` at
@@ -65,4 +65,22 @@ corresponds to gene AT1G48090 in the TAIR10 reference genome.
 # 
 # print(gene_name)
 ```
+
+## Task 3
+
+```{r task_3_1}
+gap_2 <- GAPIT(Y = phn_dat, G = gen_dat, PCA.total = 3)
+```
+
+
+```{r task_3_2}
+n_gt_lg_3_2 <- sum(gap_2$GWAS$P.value < 10 ^ (-3))
+
+min_p_snp_ind <- which.min(gap_2$GWAS$P.value)
+min_p_snp_pos <- gap_2$GWAS[min_p_snp_ind, 2:3]
+```
+
+$\Rightarrow$ $`r n_gt_lg_3_2`$ SNP has/have $p < 0.001$. This is more than in 
+question 1 as population structure is not taken as much into account and there 
+is more test-statistic inflation and therefore more significant SNPs.
 
