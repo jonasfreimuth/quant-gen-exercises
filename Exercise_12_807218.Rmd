@@ -1,0 +1,32 @@
+---
+title: "Exercise 12"
+author: "Jonas Freimuth, 807218"
+date: "03 02 2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library("data.table")
+library("rrBLUP")
+
+# library("ggplot2")
+# library("fastDummies")
+```
+
+## Task 1
+
+```{r task 1_1}
+
+```
+
+## Task 2
+
+```{r task_2_1}
+
+```
+
+## Task 3
+
+```{r task_3_1}
+
+```
